@@ -1,1 +1,39 @@
+name: Build iPhone IPA
 
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: macos-15
+    steps:
+      - name: Download project
+        uses: actions/checkout@v4
+
+      - name: Extract ZIP
+        run: |
+          python3 - <<'PY'
+          import glob
+          import zipfile
+          files = glob.glob("BitcoinPulse*.zip")
+          if len(files) != 1:
+              raise SystemExit("Expected one BitcoinPulse ZIP file")
+          with zipfile.ZipFile(files[0]) as archive:
+              archive.extractall("ios-project")
+          PY
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Build IPA
+        run: bash ios-project/BitcoinPulse/scripts/build-ipa.sh
+
+      - name: Save IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: BitcoinPulse-unsigned
+          path: ios-project/BitcoinPulse/dist/*.ipa
+          if-no-files-found: error
