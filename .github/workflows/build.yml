@@ -9,6 +9,7 @@ permissions:
 jobs:
   build:
     runs-on: macos-15
+
     steps:
       - name: Download project
         uses: actions/checkout@v4
@@ -28,8 +29,14 @@ jobs:
       - name: Install XcodeGen
         run: brew install xcodegen
 
-      - name: Build IPA
-        run: bash ios-project/BitcoinPulse/scripts/build-ipa.sh
+      - name: Build IPA and fix full screen
+        run: |
+          bash ios-project/BitcoinPulse/scripts/build-ipa.sh
+          cd ios-project/BitcoinPulse/dist
+          /usr/libexec/PlistBuddy -c "Delete :UILaunchScreen" Payload/BitcoinPulse.app/Info.plist || true
+          /usr/libexec/PlistBuddy -c "Add :UILaunchScreen dict" Payload/BitcoinPulse.app/Info.plist
+          rm BitcoinPulse-unsigned.ipa
+          zip -qry BitcoinPulse-unsigned.ipa Payload
 
       - name: Save IPA
         uses: actions/upload-artifact@v4
